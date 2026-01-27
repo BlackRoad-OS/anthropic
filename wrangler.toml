@@ -1,0 +1,94 @@
+# Cloudflare Workers configuration for Anthropic integrations
+name = "anthropic-workers"
+main = "src/index.ts"
+compatibility_date = "2024-10-22"
+compatibility_flags = ["nodejs_compat"]
+
+# Development settings
+[dev]
+port = 8787
+local_protocol = "http"
+
+# Environment variables (non-sensitive defaults)
+[vars]
+ENVIRONMENT = "development"
+LOG_LEVEL = "debug"
+API_VERSION = "v1"
+MAX_TOKENS_DEFAULT = 4096
+RATE_LIMIT_REQUESTS = 100
+RATE_LIMIT_WINDOW_SECONDS = 60
+
+# KV Namespaces for caching and session storage
+[[kv_namespaces]]
+binding = "CACHE"
+id = "your-cache-kv-id"
+preview_id = "your-cache-kv-preview-id"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "your-sessions-kv-id"
+preview_id = "your-sessions-kv-preview-id"
+
+# R2 bucket for storing conversation history and artifacts
+[[r2_buckets]]
+binding = "ARTIFACTS"
+bucket_name = "anthropic-artifacts"
+preview_bucket_name = "anthropic-artifacts-preview"
+
+# D1 database for structured data
+[[d1_databases]]
+binding = "DB"
+database_name = "anthropic-db"
+database_id = "your-d1-database-id"
+
+# Durable Objects for stateful connections
+[[durable_objects.bindings]]
+name = "CONVERSATION"
+class_name = "ConversationDurableObject"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["ConversationDurableObject"]
+
+# Analytics Engine for metrics
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# Queue for async processing
+[[queues.producers]]
+queue = "anthropic-tasks"
+binding = "TASK_QUEUE"
+
+[[queues.consumers]]
+queue = "anthropic-tasks"
+max_batch_size = 10
+max_batch_timeout = 30
+
+# Staging environment
+[env.staging]
+name = "anthropic-workers-staging"
+vars = { ENVIRONMENT = "staging", LOG_LEVEL = "info" }
+
+[[env.staging.kv_namespaces]]
+binding = "CACHE"
+id = "your-staging-cache-kv-id"
+
+[[env.staging.kv_namespaces]]
+binding = "SESSIONS"
+id = "your-staging-sessions-kv-id"
+
+# Production environment
+[env.production]
+name = "anthropic-workers-production"
+vars = { ENVIRONMENT = "production", LOG_LEVEL = "warn" }
+routes = [
+  { pattern = "api.example.com/anthropic/*", zone_name = "example.com" }
+]
+
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "your-production-cache-kv-id"
+
+[[env.production.kv_namespaces]]
+binding = "SESSIONS"
+id = "your-production-sessions-kv-id"
